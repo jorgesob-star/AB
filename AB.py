@@ -32,5 +32,4 @@ if st.button("Calcular 🔹"):
     sobra_opcao2 = apuro_liquido - (apuro * perc_seguro / 100) - seguro
 
     # Mostrar resultados
-    st.markdown(f"💰 **Opção 1:** {perc_aluguer}% do apuro + {aluguer} € aluguer → **Sobra: {sobra_opcao1:.2f} €**")
-    st.markdown(f"💰 **Opção
+    st.markdown(f"💰 **Opção 1:** {perc_aluguer}% do apuro + {aluguer
