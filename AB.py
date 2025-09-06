@@ -1,78 +1,153 @@
-# -*- coding: utf-8 -*-
+import streamlit as st
 import matplotlib.pyplot as plt
+import pandas as pd
 
-def comparar_descontos():
-    """
-    Compara duas opções de despesas com base no apuro líquido.
-    """
-    try:
-        # 1. Entradas do Usuário
-        print("💸 Comparador de Descontos")
-        print("-" * 30)
-        
-        apuro_total = float(input("💰 Apuro total (€): "))
-        desc_combustivel = float(input("⛽ Desconto de Combustível (€): "))
-        
-        apuro_liquido = apuro_total - desc_combustivel
-        print(f"\nApuro Líquido: {apuro_liquido:.2f} €\n")
+# --- Configuração da página ---
+st.set_page_config(page_title="Comparador de Descontos", layout="wide")
+st.title("💸 Comparador de Descontos - Dashboard Interativo com Histórico")
 
-        # 2. Opção 1
-        print("--- Opção 1 ---")
-        aluguer = float(input("🏠 Aluguer (€): "))
-        perc_aluguer = float(input("👔 Percentual (%): "))
-        
-        # 3. Opção 2
-        print("\n--- Opção 2 ---")
-        seguro = float(input("🛡️ Seguro (€): "))
-        manutencao = float(input("🛠️ Manutenção (€): "))
-        perc_seguro = float(input("👔 Percentual (%): "))
+# --- Valores padrão ---
+DEFAULTS = {
+    'aluguer': 280.0,
+    'perc_aluguer': 7.0,
+    'seguro': 45.0,
+    'perc_seguro': 12.0,
+    'manutencao': 20.0
+}
 
-        # 4. Cálculos
-        sobra_opcao1 = apuro_liquido - (apuro_liquido * perc_aluguer / 100) - aluguer
-        sobra_opcao2 = apuro_liquido - (apuro_liquido * perc_seguro / 100) - seguro - manutencao
+# Inicializa valores no estado da sessão
+for key, value in DEFAULTS.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
-        # 5. Exibir Resultados
-        print("\n" + "=" * 30)
-        print("🌟 Resultados da Comparação")
-        print("=" * 30)
-        print(f"📈 Opção 1: Sobram {sobra_opcao1:.2f} €")
-        print(f"📈 Opção 2: Sobram {sobra_opcao2:.2f} €")
-        print("-" * 30)
+if "historico" not in st.session_state:
+    st.session_state.historico = []  # lista para guardar simulações
 
-        # 6. Mensagem de Conclusão
-        if sobra_opcao1 > sobra_opcao2:
-            diferenca = sobra_opcao1 - sobra_opcao2
-            print(f"🎉 A Opção 1 é a melhor escolha, com uma diferença de {diferenca:.2f} €.")
-        elif sobra_opcao2 > sobra_opcao1:
-            diferenca = sobra_opcao2 - sobra_opcao1
-            print(f"🎉 A Opção 2 é a melhor escolha, com uma diferença de {diferenca:.2f} €.")
-        else:
-            print("As duas opções resultam no mesmo valor.")
-            
-        # 7. Gerar Gráfico
-        labels = ['Opção 1', 'Opção 2']
-        valores = [sobra_opcao1, sobra_opcao2]
-        cores = ['#2196F3', '#2196F3']
-        
-        if sobra_opcao1 > sobra_opcao2:
-            cores[0] = '#4CAF50' # Verde para a melhor opção
-        elif sobra_opcao2 > sobra_opcao1:
-            cores[1] = '#4CAF50'
-            
-        plt.figure(figsize=(8, 6))
-        plt.bar(labels, valores, color=cores)
-        plt.ylabel('€ Restantes')
-        plt.title('Comparação entre Opções')
-        plt.grid(axis='y', linestyle='--', alpha=0.7)
-        
-        # Adicionar os valores nas barras
-        for i, v in enumerate(valores):
-            plt.text(i, v + 1, f"{v:.2f} €", ha='center')
-            
-        plt.show()
+# --- Entradas do usuário ---
+with st.container():
+    st.header("⚙️ Entradas do Usuário")
+    col1, col2 = st.columns([1,1])
+    with col1:
+        apuro = st.number_input("💰 Apuro total (€)", min_value=0.0, value=800.0, step=10.0, format="%.2f")
+    with col2:
+        desc_combustivel = st.number_input("⛽ Desconto de Combustível (€)", min_value=0.0, value=200.0, step=1.0, format="%.2f")
 
-    except ValueError:
-        print("\nErro: Por favor, insira apenas valores numéricos.")
+apuro_liquido = apuro - desc_combustivel
+st.info(f"📌 **Apuro Líquido:** {apuro_liquido:,.2f} €")
+st.markdown("---")
 
-# Executa o programa
-comparar_descontos()
+# --- Opções da empresa ---
+with st.expander("⚖️ Modificar Opções Padrão"):
+    col1, col2 = st.columns(2)
+    with col1:
+        st.subheader("Opção 1")
+        st.number_input("🏠 Aluguer (€)", min_value=0.0, value=st.session_state.aluguer, step=1.0, key='aluguer', format="%.2f")
+        st.number_input("👔 Percentual (%)", min_value=0.0, value=st.session_state.perc_aluguer, step=0.1, key='perc_aluguer', format="%.2f")
+    with col2:
+        st.subheader("Opção 2")
+        st.number_input("🛡️ Seguro (€)", min_value=0.0, value=st.session_state.seguro, step=1.0, key='seguro', format="%.2f")
+        st.number_input("👔 Percentual (%)", min_value=0.0, value=st.session_state.perc_seguro, step=0.1, key='perc_seguro', format="%.2f")
+        st.number_input("🛠️ Manutenção (€)", min_value=0.0, value=st.session_state.manutencao, step=1.0, key='manutencao', format="%.2f")
+
+st.markdown("---")
+
+# --- Função de cálculo ---
+def calcular_sobra(apuro_liquido, percentual, fixo, manutencao=0):
+    return apuro_liquido - (apuro_liquido * percentual / 100) - fixo - manutencao
+
+# --- Cálculo automático ---
+sobra_opcao1 = calcular_sobra(apuro_liquido, st.session_state.perc_aluguer, st.session_state.aluguer)
+sobra_opcao2 = calcular_sobra(apuro_liquido, st.session_state.perc_seguro, st.session_state.seguro, st.session_state.manutencao)
+
+# Determinar vencedor
+if sobra_opcao1 > sobra_opcao2:
+    vencedor = "Opção 1"
+    cor1, cor2 = "#4CAF50", "#D3D3D3"
+elif sobra_opcao2 > sobra_opcao1:
+    vencedor = "Opção 2"
+    cor1, cor2 = "#D3D3D3", "#4CAF50"
+else:
+    vencedor = "Empate"
+    cor1, cor2 = "#2196F3", "#2196F3"
+
+# --- Resultados atuais ---
+st.header("📊 Resultados Comparativos")
+col3, col4 = st.columns(2)
+
+with col3:
+    st.markdown(
+        f"""
+        <div style="background-color:{cor1}; padding:20px; border-radius:15px; text-align:center; color:white;">
+            <h2>🏠 Opção 1</h2>
+            <h3>{sobra_opcao1:,.2f} €</h3>
+            <p>Aluguer: {st.session_state.aluguer:,.2f} €</p>
+            <p>Percentual: {st.session_state.perc_aluguer}%</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+with col4:
+    st.markdown(
+        f"""
+        <div style="background-color:{cor2}; padding:20px; border-radius:15px; text-align:center; color:white;">
+            <h2>🛡️ Opção 2</h2>
+            <h3>{sobra_opcao2:,.2f} €</h3>
+            <p>Seguro: {st.session_state.seguro:,.2f} €</p>
+            <p>Manutenção: {st.session_state.manutencao:,.2f} €</p>
+            <p>Percentual: {st.session_state.perc_seguro}%</p>
+        </div>
+        """,
+        unsafe_allow_html=True
+    )
+
+if vencedor == "Empate":
+    st.info("⚖️ As duas opções resultam no mesmo valor.")
+else:
+    st.success(f"🎉 A **{vencedor}** é a melhor escolha!")
+
+# --- Gráfico comparativo ---
+st.header("📊 Comparação Visual")
+fig, ax = plt.subplots(figsize=(8, 4))
+opcoes = ['Opção 1', 'Opção 2']
+valores = [sobra_opcao1, sobra_opcao2]
+cores = [cor1, cor2]
+
+bars = ax.bar(opcoes, valores, color=cores, edgecolor='black', width=0.5)
+ax.set_ylabel('€ Restantes')
+ax.set_title('Comparação entre Opções', fontsize=14, fontweight='bold')
+
+for bar in bars:
+    height = bar.get_height()
+    ax.text(bar.get_x() + bar.get_width()/2, height + 5, f"{height:,.2f} €", ha='center', fontweight='bold')
+
+st.pyplot(fig)
+
+st.markdown("---")
+
+# --- Histórico de simulações ---
+st.header("📝 Histórico de Simulações")
+
+if st.button("💾 Salvar Simulação no Histórico"):
+    st.session_state.historico.append({
+        "Apuro Líquido (€)": apuro_liquido,
+        "Opção 1 (€)": sobra_opcao1,
+        "Opção 2 (€)": sobra_opcao2,
+        "Melhor Escolha": vencedor
+    })
+    st.success("Simulação salva com sucesso!")
+
+if st.session_state.historico:
+    df_hist = pd.DataFrame(st.session_state.historico)
+    st.dataframe(df_hist, use_container_width=True)
+
+    # Gráfico histórico
+    st.markdown("### 📈 Evolução das Simulações")
+    fig2, ax2 = plt.subplots(figsize=(8, 4))
+    ax2.plot(df_hist.index, df_hist["Opção 1 (€)"], marker="o", label="Opção 1")
+    ax2.plot(df_hist.index, df_hist["Opção 2 (€)"], marker="o", label="Opção 2")
+    ax2.set_title("Histórico de Sobra (€)")
+    ax2.set_xlabel("Simulação")
+    ax2.set_ylabel("€ Restantes")
+    ax2.legend()
+    st.pyplot(fig2)
