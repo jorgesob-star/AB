@@ -1,96 +1,78 @@
-import streamlit as st
+# -*- coding: utf-8 -*-
 import matplotlib.pyplot as plt
 
-# --- Configuração da página ---
-st.set_page_config(page_title="Comparador de Descontos", layout="wide")
-st.title("💸 Comparador de Descontos")
+def comparar_descontos():
+    """
+    Compara duas opções de despesas com base no apuro líquido.
+    """
+    try:
+        # 1. Entradas do Usuário
+        print("💸 Comparador de Descontos")
+        print("-" * 30)
+        
+        apuro_total = float(input("💰 Apuro total (€): "))
+        desc_combustivel = float(input("⛽ Desconto de Combustível (€): "))
+        
+        apuro_liquido = apuro_total - desc_combustivel
+        print(f"\nApuro Líquido: {apuro_liquido:.2f} €\n")
 
-# --- Valores padrão ---
-DEFAULTS = {
-    'aluguer': 280.0,
-    'perc_aluguer': 7.0,
-    'seguro': 45.0,
-    'perc_seguro': 12.0,
-    'manutencao': 20.0
-}
+        # 2. Opção 1
+        print("--- Opção 1 ---")
+        aluguer = float(input("🏠 Aluguer (€): "))
+        perc_aluguer = float(input("👔 Percentual (%): "))
+        
+        # 3. Opção 2
+        print("\n--- Opção 2 ---")
+        seguro = float(input("🛡️ Seguro (€): "))
+        manutencao = float(input("🛠️ Manutenção (€): "))
+        perc_seguro = float(input("👔 Percentual (%): "))
 
-# Inicializa valores no estado da sessão no início do script
-# Isso evita erros na primeira execução, garantindo que as chaves existam.
-for key, value in DEFAULTS.items():
-    if key not in st.session_state:
-        st.session_state[key] = value
+        # 4. Cálculos
+        sobra_opcao1 = apuro_liquido - (apuro_liquido * perc_aluguer / 100) - aluguer
+        sobra_opcao2 = apuro_liquido - (apuro_liquido * perc_seguro / 100) - seguro - manutencao
 
-# --- Entradas do usuário ---
-st.header("Entradas do Usuário")
-col1, col2 = st.columns([1,1])
-with col1:
-    apuro = st.number_input("💰 Apuro total (€)", min_value=0.0, value=800.0, step=10.0, format="%.2f")
-with col2:
-    desc_combustivel = st.number_input("⛽ Desconto de Combustível (€)", min_value=0.0, value=200.0, step=1.0, format="%.2f")
+        # 5. Exibir Resultados
+        print("\n" + "=" * 30)
+        print("🌟 Resultados da Comparação")
+        print("=" * 30)
+        print(f"📈 Opção 1: Sobram {sobra_opcao1:.2f} €")
+        print(f"📈 Opção 2: Sobram {sobra_opcao2:.2f} €")
+        print("-" * 30)
 
-apuro_liquido = apuro - desc_combustivel
-st.markdown(f"**Apuro Líquido:** {apuro_liquido:,.2f} €")
+        # 6. Mensagem de Conclusão
+        if sobra_opcao1 > sobra_opcao2:
+            diferenca = sobra_opcao1 - sobra_opcao2
+            print(f"🎉 A Opção 1 é a melhor escolha, com uma diferença de {diferenca:.2f} €.")
+        elif sobra_opcao2 > sobra_opcao1:
+            diferenca = sobra_opcao2 - sobra_opcao1
+            print(f"🎉 A Opção 2 é a melhor escolha, com uma diferença de {diferenca:.2f} €.")
+        else:
+            print("As duas opções resultam no mesmo valor.")
+            
+        # 7. Gerar Gráfico
+        labels = ['Opção 1', 'Opção 2']
+        valores = [sobra_opcao1, sobra_opcao2]
+        cores = ['#2196F3', '#2196F3']
+        
+        if sobra_opcao1 > sobra_opcao2:
+            cores[0] = '#4CAF50' # Verde para a melhor opção
+        elif sobra_opcao2 > sobra_opcao1:
+            cores[1] = '#4CAF50'
+            
+        plt.figure(figsize=(8, 6))
+        plt.bar(labels, valores, color=cores)
+        plt.ylabel('€ Restantes')
+        plt.title('Comparação entre Opções')
+        plt.grid(axis='y', linestyle='--', alpha=0.7)
+        
+        # Adicionar os valores nas barras
+        for i, v in enumerate(valores):
+            plt.text(i, v + 1, f"{v:.2f} €", ha='center')
+            
+        plt.show()
 
-# --- Opções da empresa ---
-st.markdown("---")
-with st.expander("Modificar Opções Padrão"):
-    col1, col2 = st.columns(2)
-    with col1:
-        st.subheader("Opção 1")
-        st.number_input("🏠 Aluguer (€)", min_value=0.0, value=st.session_state.aluguer, step=1.0, key='aluguer', format="%.2f")
-        st.number_input("👔 Percentual (%)", min_value=0.0, value=st.session_state.perc_aluguer, step=0.1, key='perc_aluguer', format="%.2f")
-    with col2:
-        st.subheader("Opção 2")
-        st.number_input("🛡️ Seguro (€)", min_value=0.0, value=st.session_state.seguro, step=1.0, key='seguro', format="%.2f")
-        st.number_input("👔 Percentual (%)", min_value=0.0, value=st.session_state.perc_seguro, step=0.1, key='perc_seguro', format="%.2f")
-        st.number_input("🛠️ Manutenção (€)", min_value=0.0, value=st.session_state.manutencao, step=1.0, key='manutencao', format="%.2f")
+    except ValueError:
+        print("\nErro: Por favor, insira apenas valores numéricos.")
 
-# --- Função de cálculo ---
-def calcular_sobra(apuro_liquido, percentual, fixo, manutencao=0):
-    return apuro_liquido - (apuro_liquido * percentual / 100) - fixo - manutencao
-
-# --- Cálculo e exibição dos resultados ---
-# A lógica de cálculo é executada a cada interação,
-# garantindo que os resultados sejam sempre atualizados.
-sobra_opcao1 = calcular_sobra(apuro_liquido, st.session_state.perc_aluguer, st.session_state.aluguer)
-sobra_opcao2 = calcular_sobra(apuro_liquido, st.session_state.perc_seguro, st.session_state.seguro, st.session_state.manutencao)
-
-st.markdown("---")
-st.header("Resultados")
-col3, col4 = st.columns(2)
-with col3:
-    st.markdown("### 📈 Opção 1")
-    st.metric("Sobra (€)", f"{sobra_opcao1:,.2f}")
-    st.markdown(f"**Aluguer:** {st.session_state.aluguer:,.2f} €\n\n**Percentual:** {st.session_state.perc_aluguer}%")
-with col4:
-    st.markdown("### 📈 Opção 2")
-    st.metric("Sobra (€)", f"{sobra_opcao2:,.2f}")
-    st.markdown(f"**Seguro:** {st.session_state.seguro:,.2f} €\n\n**Manutenção:** {st.session_state.manutencao:,.2f} €\n\n**Percentual:** {st.session_state.perc_seguro}%")
-
-# Mensagem de recomendação
-if sobra_opcao1 > sobra_opcao2:
-    st.success(f"🎉 A **Opção 1** é a melhor escolha, com diferença de {(sobra_opcao1 - sobra_opcao2):,.2f} €.")
-elif sobra_opcao2 > sobra_opcao1:
-    st.success(f"🎉 A **Opção 2** é a melhor escolha, com diferença de {(sobra_opcao2 - sobra_opcao1):,.2f} €.")
-else:
-    st.info("As duas opções resultam no mesmo valor.")
-
-# --- Gráfico comparativo moderno ---
-st.markdown("---")
-st.markdown("### 📊 Comparação Visual")
-fig, ax = plt.subplots(figsize=(8, 4))
-opcoes = ['Opção 1', 'Opção 2']
-valores = [sobra_opcao1, sobra_opcao2]
-cores = ['#4CAF50' if sobra_opcao1 >= sobra_opcao2 else '#2196F3',
-         '#4CAF50' if sobra_opcao2 > sobra_opcao1 else '#2196F3']
-
-bars = ax.bar(opcoes, valores, color=cores, edgecolor='black', width=0.5)
-ax.set_ylabel('€ Restantes')
-ax.set_title('Comparação entre Opções', fontsize=14, fontweight='bold')
-
-# Adiciona valores sobre as barras
-for bar in bars:
-    height = bar.get_height()
-    ax.text(bar.get_x() + bar.get_width()/2, height + 5, f"{height:,.2f} €", ha='center', fontweight='bold')
-
-st.pyplot(fig)
+# Executa o programa
+comparar_descontos()
