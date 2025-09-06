@@ -150,3 +150,4 @@ if st.button("Calcular 🔹", type="primary"):
         - Valor Final: {sobra_opcao2:,.2f} €
         - Ganho por Hora: {ganho_hora_opcao2:,.2f} €/h
         """)
+
