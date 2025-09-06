@@ -1,5 +1,4 @@
 import streamlit as st
-import pandas as pd
 
 # Configuração da página
 st.set_page_config(page_title="Comparador de Descontos", layout="centered")
@@ -28,10 +27,11 @@ desc_combustivel = st.number_input("⛽ Desconto de Combustível (€)", min_val
 horas_trabalho = st.number_input("⏱️ Número de horas trabalhadas", min_value=1.0, value=40.0, step=1.0)
 st.markdown("---")
 
-# --- Opções da Empresa ---
+# --- Opções ---
 st.header("Opções da Empresa")
 if st.button("Modificar Opções Padrão"):
     st.session_state.show_inputs = not st.session_state.show_inputs
+
 if st.session_state.show_inputs:
     col1, col2 = st.columns(2)
     with col1:
@@ -45,6 +45,7 @@ if st.session_state.show_inputs:
         st.number_input("🛠️ Manutenção (€)", min_value=0.0, value=st.session_state.manutencao, step=1.0, key='manutencao')
 else:
     st.info("Valores padrão das opções estão sendo usados. Clique no botão acima para modificá-los.")
+
 st.markdown("---")
 
 # --- Cálculo ---
@@ -66,46 +67,52 @@ if st.button("Calcular 🔹", type="primary"):
     st.metric("Horas Trabalhadas", f"{horas_trabalho:,.0f} h")
     st.markdown("---")
 
-    # --- Tabelas de resumo ---
+    # --- Abas ---
     tab1, tab2 = st.tabs(["📈 Resumo", "🧮 Detalhes dos Cálculos"])
     with tab1:
         st.write("### Valores e Ganhos por Hora")
-        df = pd.DataFrame({
-            "Opção": ["Alugado", "Próprio"],
-            "Sobra (€)": [sobra_opcao1, sobra_opcao2],
-            "€/Hora": [ganho_hora_opcao1, ganho_hora_opcao2]
-        })
-        # Destacar a melhor opção por €/h
         melhor_idx = 0 if ganho_hora_opcao1 >= ganho_hora_opcao2 else 1
-        cores = ["#FFD700" if i==melhor_idx else "#1f77b4" for i in range(2)]
-        st.bar_chart(df[["Sobra (€)", "€/Hora"]], height=300)
 
-        # Mostrar tabela com destaque
-        st.dataframe(df.style.apply(lambda x: ["background-color: gold" if i==melhor_idx else "" for i in range(len(x))], axis=1))
+        col1, col2 = st.columns(2)
+        with col1:
+            st.metric("Sobra Opção 1 (Alugado)", f"{sobra_opcao1:,.2f} €")
+            st.metric("Ganho/Hora Opção 1", f"{ganho_hora_opcao1:,.2f} €/h", delta="🏆" if melhor_idx==0 else "")
+        with col2:
+            st.metric("Sobra Opção 2 (Próprio)", f"{sobra_opcao2:,.2f} €")
+            st.metric("Ganho/Hora Opção 2", f"{ganho_hora_opcao2:,.2f} €/h", delta="🏆" if melhor_idx==1 else "")
+
+        # Barras simuladas com progress
+        st.write("### Comparação Visual")
+        st.write("Sobra (€)")
+        st.progress(min(1.0, sobra_opcao1 / max(sobra_opcao1, sobra_opcao2)))
+        st.progress(min(1.0, sobra_opcao2 / max(sobra_opcao1, sobra_opcao2)))
+        st.write("Ganho por Hora (€/h)")
+        st.progress(min(1.0, ganho_hora_opcao1 / max(ganho_hora_opcao1, ganho_hora_opcao2)))
+        st.progress(min(1.0, ganho_hora_opcao2 / max(ganho_hora_opcao1, ganho_hora_opcao2)))
 
         # Melhor escolha geral
         if sobra_opcao1 > sobra_opcao2:
-            st.success(f"🎉 A **Opção 1 (Alugado)** é a melhor escolha, diferença de **{sobra_opcao1 - sobra_opcao2:,.2f} €**.")
+            st.success(f"🎉 Melhor escolha: **Opção 1 (Alugado)**, diferença de **{sobra_opcao1 - sobra_opcao2:,.2f} €**")
         elif sobra_opcao2 > sobra_opcao1:
-            st.success(f"🎉 A **Opção 2 (Próprio)** é a melhor escolha, diferença de **{sobra_opcao2 - sobra_opcao1:,.2f} €**.")
+            st.success(f"🎉 Melhor escolha: **Opção 2 (Próprio)**, diferença de **{sobra_opcao2 - sobra_opcao1:,.2f} €**")
         else:
             st.info("As duas opções resultam no mesmo valor.")
 
     with tab2:
-        st.write("### Detalhes dos cálculos")
+        st.write("### Detalhes dos Cálculos")
         st.markdown(f"""
-        **Opção 1 (Alugado):**
-        - Apuro Líquido: {apuro_liquido:,.2f} €
-        - Dedução da Empresa: {apuro:,.2f} € * ({perc_aluguer_atual}/100) = **{(apuro*perc_aluguer_atual/100):,.2f} €**
-        - Dedução de Aluguer: **{aluguer_atual:,.2f} €**
-        - Valor Final: {sobra_opcao1:,.2f} €
-        - Ganho por Hora: {ganho_hora_opcao1:,.2f} €/h
+**Opção 1 (Alugado):**
+- Apuro Líquido: {apuro_liquido:,.2f} €
+- Dedução da Empresa: {apuro:,.2f} € * ({perc_aluguer_atual}/100) = {(apuro*perc_aluguer_atual/100):,.2f} €
+- Dedução de Aluguer: {aluguer_atual:,.2f} €
+- Valor Final: {sobra_opcao1:,.2f} €
+- Ganho por Hora: {ganho_hora_opcao1:,.2f} €/h
 
-        **Opção 2 (Próprio):**
-        - Apuro Líquido: {apuro_liquido:,.2f} €
-        - Dedução da Empresa: {apuro:,.2f} € * ({perc_seguro_atual}/100) = **{(apuro*perc_seguro_atual/100):,.2f} €**
-        - Dedução de Seguro: **{seguro_atual:,.2f} €**
-        - Dedução de Manutenção: **{manutencao_atual:,.2f} €**
-        - Valor Final: {sobra_opcao2:,.2f} €
-        - Ganho por Hora: {ganho_hora_opcao2:,.2f} €/h
-        """)
+**Opção 2 (Próprio):**
+- Apuro Líquido: {apuro_liquido:,.2f} €
+- Dedução da Empresa: {apuro:,.2f} € * ({perc_seguro_atual}/100) = {(apuro*perc_seguro_atual/100):,.2f} €
+- Dedução de Seguro: {seguro_atual:,.2f} €
+- Dedução de Manutenção: {manutencao_atual:,.2f} €
+- Valor Final: {sobra_opcao2:,.2f} €
+- Ganho por Hora: {ganho_hora_opcao2:,.2f} €/h
+""")
