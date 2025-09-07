@@ -14,17 +14,7 @@ st.markdown("Compare os lucros entre usar carro alugado e carro próprio para tr
 
 # Estado para controlar a visibilidade dos parâmetros
 if 'show_params' not in st.session_state:
-    st.session_state.show_params = True
-
-# Função para alternar a visibilidade
-def toggle_params():
-    st.session_state.show_params = not st.session_state.show_params
-
-# Botão para ocultar/mostrar parâmetros
-st.button(
-    "👁️ Ocultar/Mostrar Parâmetros" if st.session_state.show_params else "👁️ Mostrar Parâmetros", 
-    on_click=toggle_params
-)
+    st.session_state.show_params = False
 
 # Divisão em colunas
 col1, col2 = st.columns(2)
@@ -49,9 +39,13 @@ with col1:
         help="Custo semanal estimado com combustível"
     )
 
-with col2:
-    # Mostrar parâmetros apenas se show_params for True
-    if st.session_state.show_params:
+# Botão para mostrar/ocultar parâmetros
+if st.button("⚙️ Parâmetros"):
+    st.session_state.show_params = not st.session_state.show_params
+
+# Mostrar parâmetros apenas se show_params for True
+if st.session_state.show_params:
+    with col2:
         st.header("⚙️ Parâmetros")
         
         # Parâmetros para carro alugado
@@ -100,14 +94,13 @@ with col2:
             step=1,
             key="own_commission"
         )
-    else:
-        # Valores padrão quando os parâmetros estão ocultos
-        rental_cost = 280.0
-        rental_commission = 7
-        own_insurance = 45.0
-        own_maintenance = 50.0
-        own_commission = 12
-        st.info("Parâmetros ocultos. Use o botão acima para visualizá-los.")
+else:
+    # Valores padrão quando os parâmetros estão ocultos
+    rental_cost = 280.0
+    rental_commission = 7
+    own_insurance = 45.0
+    own_maintenance = 50.0
+    own_commission = 12
 
 # Cálculos
 if st.button("Calcular", type="primary"):
