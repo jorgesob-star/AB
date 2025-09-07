@@ -1,217 +1,136 @@
 import streamlit as st
-import pandas as pd
 
-# Configuração da página
-st.set_page_config(
-    page_title="Comparador de Ganhos TVDE",
-    page_icon="🚗",
-    layout="wide"
-)
+# --- Configuração da página ---
+st.set_page_config(page_title="Comparador de Descontos", layout="centered")
+st.title("💸 Comparador de Descontos")
 
-# Título da aplicação
-st.title("🚗 Comparador de Ganhos TVDE")
-st.markdown("Compare os lucros entre usar carro alugado e carro próprio para trabalhar como motorista TVDE")
+# --- Valores padrão ---
+DEFAULTS = {
+    'aluguer': 1200.0,
+    'perc_aluguer': 7.0,
+    'seguro': 180.0,
+    'perc_seguro': 12.0,
+    'manutencao': 200.0
+}
 
-# Estado para controlar a visibilidade dos parâmetros
-if 'show_params' not in st.session_state:
-    st.session_state.show_params = False
+# Inicializa o estado da sessão
+for key, value in DEFAULTS.items():
+    if key not in st.session_state:
+        st.session_state[key] = value
 
-# Divisão em colunas
-col1, col2 = st.columns(2)
-
-with col1:
-    st.header("📊 Dados de Entrada")
-    
-    # Entradas do usuário
-    weekly_earnings = st.number_input(
-        "Ganhos Semanais (€):", 
-        min_value=0.0, 
-        value=800.0, 
-        step=50.0,
-        help="Valor total ganho por semana antes de despesas"
-    )
-    
-    fuel_cost = st.number_input(
-        "Custo Semanal com Combustível (€):", 
-        min_value=0.0, 
-        value=200.0, 
-        step=10.0,
-        help="Custo semanal estimado com combustível"
-    )
-
-# Botão para mostrar/ocultar parâmetros
-if st.button("⚙️ Parâmetros"):
-    st.session_state.show_params = not st.session_state.show_params
-
-# Mostrar parâmetros apenas se show_params for True
-if st.session_state.show_params:
-    with col2:
-        st.header("⚙️ Parâmetros")
-        
-        # Parâmetros para carro alugado
-        st.subheader("Carro Alugado")
-        rental_cost = st.number_input(
-            "Custo do Aluguel (€/semana):", 
-            min_value=0.0, 
-            value=280.0, 
-            step=10.0,
-            key="rental_cost"
-        )
-        
-        rental_commission = st.slider(
-            "Comissão com Carro Alugado (%):", 
-            min_value=0, 
-            max_value=30, 
-            value=7, 
-            step=1,
-            key="rental_commission"
-        )
-        
-        # Parâmetros para carro próprio
-        st.subheader("Carro Próprio")
-        own_insurance = st.number_input(
-            "Seguro (€/semana):", 
-            min_value=0.0, 
-            value=45.0, 
-            step=5.0,
-            key="own_insurance"
-        )
-        
-        own_maintenance = st.number_input(
-            "Manutenção (€/semana):", 
-            min_value=0.0, 
-            value=50.0, 
-            step=5.0,
-            key="own_maintenance",
-            help="Custo semanal estimado com manutenção do veículo próprio"
-        )
-        
-        own_commission = st.slider(
-            "Comissão com Carro Próprio (%):", 
-            min_value=0, 
-            max_value=30, 
-            value=12, 
-            step=1,
-            key="own_commission"
-        )
-else:
-    # Valores padrão quando os parâmetros estão ocultos
-    rental_cost = 280.0
-    rental_commission = 7
-    own_insurance = 45.0
-    own_maintenance = 50.0
-    own_commission = 12
-
-# Cálculos
-if st.button("Calcular", type="primary"):
-    # Calcular para carro alugado
-    rental_commission_value = weekly_earnings * (rental_commission / 100)
-    rental_net = weekly_earnings - rental_commission_value - rental_cost - fuel_cost
-    
-    # Calcular para carro próprio
-    own_commission_value = weekly_earnings * (own_commission / 100)
-    own_net = weekly_earnings - own_commission_value - own_insurance - own_maintenance - fuel_cost
-    
-    # Calcular diferença
-    difference = rental_net - own_net
-    
-    # Exibir resultados
-    st.header("📈 Resultados")
-    
-    # Métricas
-    col1, col2, col3 = st.columns(3)
-    
-    with col1:
-        st.metric(
-            "Carro Alugado (Líquido Semanal)", 
-            f"€ {rental_net:.2f}",
-            delta_color="inverse" if rental_net < 0 else "normal"
-        )
-    
-    with col2:
-        st.metric(
-            "Carro Próprio (Líquido Semanal)", 
-            f"€ {own_net:.2f}",
-            delta_color="inverse" if own_net < 0 else "normal"
-        )
-    
-    with col3:
-        st.metric(
-            "Diferença Semanal", 
-            f"€ {difference:.2f}",
-            delta_color="inverse" if difference < 0 else "normal"
-        )
-    
-    # Detalhamento dos cálculos
-    st.subheader("Detalhamento dos Cálculos")
-    
-    # Tabela comparativa
-    comparison_data = {
-        "Descrição": [
-            "Ganhos Semanais",
-            "Comissão",
-            "Custo do Aluguel/Seguro",
-            "Manutenção",
-            "Custo com Combustível",
-            "Total Líquido"
-        ],
-        "Carro Alugado (€)": [
-            weekly_earnings,
-            -rental_commission_value,
-            -rental_cost,
-            0,  # Manutenção não se aplica a carro alugado
-            -fuel_cost,
-            rental_net
-        ],
-        "Carro Próprio (€)": [
-            weekly_earnings,
-            -own_commission_value,
-            -own_insurance,
-            -own_maintenance,
-            -fuel_cost,
-            own_net
-        ]
-    }
-    
-    df = pd.DataFrame(comparison_data)
-    st.dataframe(df, use_container_width=True)
-    
-    # Recomendação
-    st.subheader("Recomendação")
-    if difference > 0:
-        st.success(f"✅ O carro alugado é mais vantajoso por € {difference:.2f} por semana.")
-    elif difference < 0:
-        st.success(f"✅ O carro próprio é mais vantajoso por € {abs(difference):.2f} por semana.")
-    else:
-        st.info("ℹ️ Ambas as opções têm o mesmo resultado financeiro.")
-    
-    # Visualização gráfica
-    st.subheader("Comparação Visual")
-    
-    chart_data = pd.DataFrame({
-        "Opção": ["Carro Alugado", "Carro Próprio"],
-        "Lucro Líquido (€)": [rental_net, own_net]
-    })
-    
-    st.bar_chart(chart_data, x="Opção", y="Lucro Líquido (€)")
-
-# Informações adicionais
-with st.expander("💡 Dicas e Informações"):
-    st.markdown("""
-    - **Ganhos Semanais**: Valor total que você recebe pelos serviços de TVDE em uma semana
-    - **Custo com Combustível**: Gasto semanal estimado com abastecimento
-    - **Comissão**: Percentual que a plataforma retém pelos serviços
-    - **Custo do Aluguel**: Valor semanal pelo aluguel do veículo (se aplicável)
-    - **Seguro**: Custo semanal do seguro do veículo próprio
-    - **Manutenção**: Custo semanal estimado com manutenção do veículo próprio
-                
-    ⚠️ Lembre-se de considerar outros custos não incluídos aqui, como:
-    - Lavagens e limpeza
-    - Estacionamento e portagens
-    - Desvalorização do veículo (no caso de carro próprio)
-    - Impostos e taxas
-    """)
-
-# Rodapé
+# --- Entradas ---
+st.header("Entradas do Usuário")
+apuro = st.number_input("💰 Apuro total (€)", min_value=0.0, value=700.0, step=10.0)
+desc_combustivel = st.number_input("⛽ Desconto de Combustível (€)", min_value=0.0, value=200.0, step=1.0)
+horas_trabalho = st.number_input("⏱️ Número de horas trabalhadas", min_value=1.0, value=40.0, step=1.0)
 st.markdown("---")
-st.caption("Desenvolvido para ajudar motoristas TVDE a tomar decisões financeiras informadas")
+
+# --- Opções da Empresa ---
+st.header("Opções da Empresa")
+
+col1, col2 = st.columns(2)
+with col1:
+    st.subheader("Alugado")
+    st.session_state.aluguer = st.number_input("🏠 Aluguer (€)", min_value=0.0, value=st.session_state.aluguer, step=1.0, key='input_aluguer')
+    st.session_state.perc_aluguer = st.number_input("👔 Percentual (%)", min_value=0.0, value=st.session_state.perc_aluguer, step=0.5, key='input_perc_aluguer')
+with col2:
+    st.subheader("Próprio")
+    st.session_state.seguro = st.number_input("🛡️ Seguro (€)", min_value=0.0, value=st.session_state.seguro, step=1.0, key='input_seguro')
+    st.session_state.perc_seguro = st.number_input("👔 Percentual (%)", min_value=0.0, value=st.session_state.perc_seguro, step=0.5, key='input_perc_seguro')
+    st.session_state.manutencao = st.number_input("🛠️ Manutenção (€)", min_value=0.0, value=st.session_state.manutencao, step=1.0, key='input_manutencao')
+
+st.markdown("---")
+
+# --- Função para barras horizontais ---
+def barra_horizontal(valor, label, cor, max_valor):
+    proporcao = abs(valor) / max_valor if max_valor > 0 else 0
+    # Ensure proportion doesn't exceed 100%
+    proporcao = min(proporcao, 1.0)
+    st.markdown(f"""
+        <div style="display:flex; align-items:center; margin-bottom:5px;">
+            <div style="width:150px;">{label}</div>
+            <div style="flex:1; background-color:#e0e0e0; border-radius:5px;">
+                <div style="width:{proporcao*100}%; background-color:{cor}; padding:5px 0; border-radius:5px;"></div>
+            </div>
+            <div style="width:80px; text-align:right;">{valor:,.2f} €</div>
+        </div>
+    """, unsafe_allow_html=True)
+
+# --- Cálculo e Visualização ---
+if st.button("Calcular 🔹", type="primary"):
+    # Preparar dados
+    apuro_liquido = apuro - desc_combustivel
+    opcoes = {k: st.session_state[k] for k in ['aluguer', 'perc_aluguer', 'seguro', 'perc_seguro', 'manutencao']}
+
+    # Cálculos
+    deducao_empresa_opcao1 = apuro * opcoes['perc_aluguer'] / 100
+    deducao_empresa_opcao2 = apuro * opcoes['perc_seguro'] / 100
+    
+    sobra_opcao1 = apuro_liquido - deducao_empresa_opcao1 - opcoes['aluguer']
+    sobra_opcao2 = apuro_liquido - deducao_empresa_opcao2 - opcoes['seguro'] - opcoes['manutencao']
+
+    ganho_hora_opcao1 = sobra_opcao1 / max(horas_trabalho, 1)
+    ganho_hora_opcao2 = sobra_opcao2 / max(horas_trabalho, 1)
+
+    st.subheader("📊 Resultados:")
+    col1, col2 = st.columns(2)
+    with col1:
+        st.metric("Apuro Líquido", f"{apuro_liquido:,.2f} €")
+    with col2:
+        st.metric("Horas Trabalhadas", f"{horas_trabalho:,.0f} h")
+    st.markdown("---")
+
+    # Melhor opção
+    if sobra_opcao1 > sobra_opcao2:
+        melhor_idx = 0
+    elif sobra_opcao2 > sobra_opcao1:
+        melhor_idx = 1
+    else:
+        melhor_idx = -1  # empate
+
+    # --- Abas ---
+    tab1, tab2 = st.tabs(["📈 Dashboard", "🧮 Detalhes dos Cálculos"])
+    
+    with tab1:
+        st.write("### Comparação Visual com Destaque")
+
+        max_sobra = max(abs(sobra_opcao1), abs(sobra_opcao2), 1)
+        max_ganho = max(abs(ganho_hora_opcao1), abs(ganho_hora_opcao2), 1)
+
+        # Sobra (€)
+        st.write("**Sobra (€)**")
+        barra_horizontal(sobra_opcao1, f"Opção 1 {'🏆' if melhor_idx==0 else ''}", '#4caf50' if melhor_idx==0 else '#a5d6a7', max_sobra)
+        barra_horizontal(sobra_opcao2, f"Opção 2 {'🏆' if melhor_idx==1 else ''}", '#2196f3' if melhor_idx==1 else '#90caf9', max_sobra)
+
+        # Ganho/Hora
+        st.write("**Ganho por Hora (€/h)**")
+        barra_horizontal(ganho_hora_opcao1, f"Opção 1 {'🏆' if melhor_idx==0 else ''}", '#4caf50' if melhor_idx==0 else '#a5d6a7', max_ganho)
+        barra_horizontal(ganho_hora_opcao2, f"Opção 2 {'🏆' if melhor_idx==1 else ''}", '#2196f3' if melhor_idx==1 else '#90caf9', max_ganho)
+
+        # Mensagem complementar
+        if melhor_idx == 0:
+            st.success(f"🎉 Melhor escolha: **Opção 1 (Alugado)**, diferença de **{sobra_opcao1 - sobra_opcao2:,.2f} €**")
+        elif melhor_idx == 1:
+            st.success(f"🎉 Melhor escolha: **Opção 2 (Próprio)**, diferença de **{sobra_opcao2 - sobra_opcao1:,.2f} €**")
+        else:
+            st.info("As duas opções resultam no mesmo valor.")
+
+    with tab2:
+        st.write("### Detalhes dos Cálculos")
+        
+        st.write("**Opção 1 (Alugado):**")
+        st.write(f"- Apuro Líquido: {apuro_liquido:,.2f} €")
+        st.write(f"- Dedução da Empresa: {apuro:,.2f} € × ({opcoes['perc_aluguer']}%) = {deducao_empresa_opcao1:,.2f} €")
+        st.write(f"- Dedução de Aluguer: {opcoes['aluguer']:,.2f} €")
+        st.write(f"- **Valor Final: {sobra_opcao1:,.2f} €**")
+        st.write(f"- Ganho por Hora: {ganho_hora_opcao1:,.2f} €/h")
+        
+        st.write("")  # Empty line for spacing
+        
+        st.write("**Opção 2 (Próprio):**")
+        st.write(f"- Apuro Líquido: {apuro_liquido:,.2f} €")
+        st.write(f"- Dedução da Empresa: {apuro:,.2f} € × ({opcoes['perc_seguro']}%) = {deducao_empresa_opcao2:,.2f} €")
+        st.write(f"- Dedução de Seguro: {opcoes['seguro']:,.2f} €")
+        st.write(f"- Dedução de Manutenção: {opcoes['manutencao']:,.2f} €")
+        st.write(f"- **Valor Final: {sobra_opcao2:,.2f} €**")
+        st.write(f"- Ganho por Hora: {ganho_hora_opcao2:,.2f} €/h")
