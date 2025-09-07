@@ -34,7 +34,7 @@ with col1:
     fuel_cost = st.number_input(
         "Custo Semanal com Combustível (€):", 
         min_value=0.0, 
-        value=120.0, 
+        value=200.0, 
         step=10.0,
         help="Custo semanal estimado com combustível"
     )
