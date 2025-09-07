@@ -97,19 +97,18 @@ if st.button("Calcular 🔹", type="primary"):
         st.stop()
     
     # Preparar dados
-    apuro_liquido = apuro - desc_combustivel
     opcoes = {k: st.session_state[k] for k in ['aluguer', 'perc_aluguer', 'seguro', 'perc_seguro', 'manutencao']}
 
     # Cálculos
     deducao_empresa_opcao1 = apuro * opcoes['perc_aluguer'] / 100
     deducao_empresa_opcao2 = apuro * opcoes['perc_seguro'] / 100
     
-    sobra_opcao1 = apuro_liquido - deducao_empresa_opcao1 - opcoes['aluguer']
-    sobra_opcao2 = apuro_liquido - deducao_empresa_opcao2 - opcoes['seguro'] - opcoes['manutencao']
+    sobra_opcao1 = apuro - desc_combustivel - deducao_empresa_opcao1 - opcoes['aluguer']
+    sobra_opcao2 = apuro - desc_combustivel - deducao_empresa_opcao2 - opcoes['seguro'] - opcoes['manutencao']
 
     # Verificar resultados negativos
     if sobra_opcao1 < 0 or sobra_opcao2 < 0:
-        st.warning("Atenção: Uma ou ambas as opções resultam em valores negativos, indicando que as deduções excedem o apuro líquido. Considere ajustar os valores de entrada.")
+        st.warning("Atenção: Uma ou ambas as opções resultam em valores negativos, indicando que as deduções excedem o apuro. Considere ajustar os valores de entrada.")
     
     ganho_hora_opcao1 = sobra_opcao1 / horas_trabalho
     ganho_hora_opcao2 = sobra_opcao2 / horas_trabalho
@@ -117,7 +116,7 @@ if st.button("Calcular 🔹", type="primary"):
     st.subheader("📊 Resultados:")
     col1, col2 = st.columns(2)
     with col1:
-        st.metric("Apuro Líquido", f"{apuro_liquido:,.2f} €")
+        st.metric("Apuro Total", f"{apuro:,.2f} €")
     with col2:
         st.metric("Horas Trabalhadas", f"{horas_trabalho:,.0f} h")
     st.markdown("---")
@@ -161,7 +160,8 @@ if st.button("Calcular 🔹", type="primary"):
         st.write("### Detalhes dos Cálculos")
         
         st.write("**Opção 1 (Alugado):**")
-        st.write(f"- Apuro Líquido: {apuro_liquido:,.2f} €")
+        st.write(f"- Apuro Total: {apuro:,.2f} €")
+        st.write(f"- Desconto de Combustível: {desc_combustivel:,.2f} €")
         st.write(f"- Dedução da Empresa: {apuro:,.2f} € × ({opcoes['perc_aluguer']}%) = {deducao_empresa_opcao1:,.2f} €")
         st.write(f"- Dedução de Aluguer: {opcoes['aluguer']:,.2f} €")
         st.write(f"- **Valor Final: {sobra_opcao1:,.2f} €**")
@@ -170,7 +170,8 @@ if st.button("Calcular 🔹", type="primary"):
         st.write("")  # Linha em branco para espaçamento
         
         st.write("**Opção 2 (Próprio):**")
-        st.write(f"- Apuro Líquido: {apuro_liquido:,.2f} €")
+        st.write(f"- Apuro Total: {apuro:,.2f} €")
+        st.write(f"- Desconto de Combustível: {desc_combustivel:,.2f} €")
         st.write(f"- Dedução da Empresa: {apuro:,.2f} € × ({opcoes['perc_seguro']}%) = {deducao_empresa_opcao2:,.2f} €")
         st.write(f"- Dedução de Seguro: {opcoes['seguro']:,.2f} €")
         st.write(f"- Dedução de Manutenção: {opcoes['manutencao']:,.2f} €")
