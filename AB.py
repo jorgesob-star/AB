@@ -12,6 +12,20 @@ st.set_page_config(
 st.title("🚗 Comparador de Ganhos TVDE")
 st.markdown("Compare os lucros entre usar carro alugado e carro próprio para trabalhar como motorista TVDE")
 
+# Estado para controlar a visibilidade dos parâmetros
+if 'show_params' not in st.session_state:
+    st.session_state.show_params = True
+
+# Função para alternar a visibilidade
+def toggle_params():
+    st.session_state.show_params = not st.session_state.show_params
+
+# Botão para ocultar/mostrar parâmetros
+st.button(
+    "👁️ Ocultar/Mostrar Parâmetros" if st.session_state.show_params else "👁️ Mostrar Parâmetros", 
+    on_click=toggle_params
+)
+
 # Divisão em colunas
 col1, col2 = st.columns(2)
 
@@ -36,45 +50,64 @@ with col1:
     )
 
 with col2:
-    st.header("⚙️ Parâmetros")
-    
-    # Parâmetros para carro alugado
-    st.subheader("Carro Alugado")
-    rental_cost = st.number_input(
-        "Custo do Aluguel (€/semana):", 
-        min_value=0.0, 
-        value=280.0, 
-        step=10.0,
-        key="rental_cost"
-    )
-    
-    rental_commission = st.slider(
-        "Comissão com Carro Alugado (%):", 
-        min_value=0, 
-        max_value=30, 
-        value=7, 
-        step=1,
-        key="rental_commission"
-    )
-    
-    # Parâmetros para carro próprio
-    st.subheader("Carro Próprio")
-    own_insurance = st.number_input(
-        "Seguro (€/semana):", 
-        min_value=0.0, 
-        value=45.0, 
-        step=5.0,
-        key="own_insurance"
-    )
-    
-    own_commission = st.slider(
-        "Comissão com Carro Próprio (%):", 
-        min_value=0, 
-        max_value=30, 
-        value=12, 
-        step=1,
-        key="own_commission"
-    )
+    # Mostrar parâmetros apenas se show_params for True
+    if st.session_state.show_params:
+        st.header("⚙️ Parâmetros")
+        
+        # Parâmetros para carro alugado
+        st.subheader("Carro Alugado")
+        rental_cost = st.number_input(
+            "Custo do Aluguel (€/semana):", 
+            min_value=0.0, 
+            value=280.0, 
+            step=10.0,
+            key="rental_cost"
+        )
+        
+        rental_commission = st.slider(
+            "Comissão com Carro Alugado (%):", 
+            min_value=0, 
+            max_value=30, 
+            value=7, 
+            step=1,
+            key="rental_commission"
+        )
+        
+        # Parâmetros para carro próprio
+        st.subheader("Carro Próprio")
+        own_insurance = st.number_input(
+            "Seguro (€/semana):", 
+            min_value=0.0, 
+            value=45.0, 
+            step=5.0,
+            key="own_insurance"
+        )
+        
+        own_maintenance = st.number_input(
+            "Manutenção (€/semana):", 
+            min_value=0.0, 
+            value=50.0, 
+            step=5.0,
+            key="own_maintenance",
+            help="Custo semanal estimado com manutenção do veículo próprio"
+        )
+        
+        own_commission = st.slider(
+            "Comissão com Carro Próprio (%):", 
+            min_value=0, 
+            max_value=30, 
+            value=12, 
+            step=1,
+            key="own_commission"
+        )
+    else:
+        # Valores padrão quando os parâmetros estão ocultos
+        rental_cost = 280.0
+        rental_commission = 7
+        own_insurance = 45.0
+        own_maintenance = 50.0
+        own_commission = 12
+        st.info("Parâmetros ocultos. Use o botão acima para visualizá-los.")
 
 # Cálculos
 if st.button("Calcular", type="primary"):
@@ -84,7 +117,7 @@ if st.button("Calcular", type="primary"):
     
     # Calcular para carro próprio
     own_commission_value = weekly_earnings * (own_commission / 100)
-    own_net = weekly_earnings - own_commission_value - own_insurance - fuel_cost
+    own_net = weekly_earnings - own_commission_value - own_insurance - own_maintenance - fuel_cost
     
     # Calcular diferença
     difference = rental_net - own_net
@@ -125,6 +158,7 @@ if st.button("Calcular", type="primary"):
             "Ganhos Semanais",
             "Comissão",
             "Custo do Aluguel/Seguro",
+            "Manutenção",
             "Custo com Combustível",
             "Total Líquido"
         ],
@@ -132,6 +166,7 @@ if st.button("Calcular", type="primary"):
             weekly_earnings,
             -rental_commission_value,
             -rental_cost,
+            0,  # Manutenção não se aplica a carro alugado
             -fuel_cost,
             rental_net
         ],
@@ -139,6 +174,7 @@ if st.button("Calcular", type="primary"):
             weekly_earnings,
             -own_commission_value,
             -own_insurance,
+            -own_maintenance,
             -fuel_cost,
             own_net
         ]
@@ -174,12 +210,13 @@ with st.expander("💡 Dicas e Informações"):
     - **Comissão**: Percentual que a plataforma retém pelos serviços
     - **Custo do Aluguel**: Valor semanal pelo aluguel do veículo (se aplicável)
     - **Seguro**: Custo semanal do seguro do veículo próprio
+    - **Manutenção**: Custo semanal estimado com manutenção do veículo próprio
                 
     ⚠️ Lembre-se de considerar outros custos não incluídos aqui, como:
-    - Manutenção do veículo
     - Lavagens e limpeza
     - Estacionamento e portagens
     - Desvalorização do veículo (no caso de carro próprio)
+    - Impostos e taxas
     """)
 
 # Rodapé
