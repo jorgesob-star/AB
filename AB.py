@@ -5,8 +5,7 @@ from datetime import datetime
 import pandas as pd
 import plotly.express as px
 
-# Configuração da página e do layout
-# Define o título da página no navegador, o ícone e o layout da aplicação.
+# Configuração da página
 st.set_page_config(
     page_title="Gestor de Despesas Pessoais",
     page_icon="💰",
@@ -14,22 +13,17 @@ st.set_page_config(
     initial_sidebar_state="expanded"
 )
 
-# --- Funções de Gestão de Dados ---
-# A função a seguir lida com a leitura e inicialização dos dados.
-# Em um ambiente de produção (nuvem), você usaria um banco de dados persistente.
+# Inicialização dos dados
 def carregar_dados():
-    """
-    Carrega os dados do arquivo JSON local.
-    Se o arquivo não existir ou for inválido, inicializa a estrutura de dados padrão.
-    """
-    try:
-        if os.path.exists("despesas.json"):
+    """Carrega os dados do arquivo JSON ou inicializa com valores padrão"""
+    if os.path.exists("despesas.json"):
+        try:
             with open("despesas.json", 'r', encoding='utf-8') as f:
                 return json.load(f)
-    except (json.JSONDecodeError, FileNotFoundError):
-        st.error("Arquivo de dados corrompido ou não encontrado. Inicializando com dados padrão.")
+        except (json.JSONDecodeError, FileNotFoundError):
+            return {}
     
-    # Estrutura de dados inicial caso o arquivo não exista ou esteja corrompido
+    # Dados iniciais se o arquivo não existir
     return {
         "mensais": [
             {"nome": "Casa", "valor": 0.0, "icon": "🏠"},
@@ -56,12 +50,23 @@ def carregar_dados():
     }
 
 def salvar_dados(dados):
-    """Salva os dados no arquivo JSON com formatação."""
+    """Salva os dados no arquivo JSON"""
     with open("despesas.json", 'w', encoding='utf-8') as f:
         json.dump(dados, f, ensure_ascii=False, indent=4)
 
+# Carregar dados
+dados = carregar_dados()
+
+# Título da aplicação
+st.title("💰 Gestor de Despesas Pessoais")
+
+# Barra lateral para navegação
+st.sidebar.title("Navegação")
+pagina = st.sidebar.radio("Selecione a página:", 
+                         ["📋 Visualizar Despesas", "✏️ Editar Despesas", "📊 Resumo Financeiro"])
+
+# Função para calcular totais
 def calcular_totais(dados):
-    """Calcula os totais de despesas por categoria e projeção anual."""
     totais = {
         "mensal": sum(item["valor"] for item in dados["mensais"]),
         "trimestral": sum(item["valor"] for item in dados["trimestrais"]),
@@ -73,19 +78,7 @@ def calcular_totais(dados):
     
     return totais
 
-# --- Execução Principal da Aplicação ---
-# Carrega os dados na primeira execução
-dados = carregar_dados()
-
-# Título da aplicação principal
-st.title("💰 Gestor de Despesas Pessoais")
-
-# Barra lateral para navegação
-st.sidebar.title("Navegação")
-pagina = st.sidebar.radio("Selecione a página:", 
-                         ["📋 Visualizar Despesas", "✏️ Editar Despesas", "📊 Resumo Financeiro"])
-
-# Renderiza a página selecionada
+# Página: Visualizar Despesas
 if pagina == "📋 Visualizar Despesas":
     st.header("📋 Suas Despesas")
     
@@ -106,9 +99,10 @@ if pagina == "📋 Visualizar Despesas":
         for item in dados["anuais"]:
             st.write(f"{item['icon']} {item['nome']}: {item['valor']:.2f} €")
     
-    # Mostra os totais calculados
-    st.divider()
+    # Mostrar totais
     totais = calcular_totais(dados)
+    st.divider()
+    
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Mensal", f"{totais['mensal']:.2f} €")
@@ -119,6 +113,7 @@ if pagina == "📋 Visualizar Despesas":
     with col4:
         st.metric("Total Anual Projetado", f"{totais['anual_projetado']:.2f} €")
 
+# Página: Editar Despesas
 elif pagina == "✏️ Editar Despesas":
     st.header("✏️ Editar Despesas")
     
@@ -129,14 +124,13 @@ elif pagina == "✏️ Editar Despesas":
     
     st.subheader(f"Despesas {categoria}")
     
-    # Formulário para editar os valores das despesas existentes
+    # Formulário para editar despesas
     with st.form(f"form_{categoria_key}"):
         for i, item in enumerate(dados[categoria_key]):
             col1, col2 = st.columns([3, 1])
             with col1:
                 st.text_input("Nome", value=item["nome"], key=f"nome_{categoria_key}_{i}", disabled=True)
             with col2:
-                # O valor é atualizado diretamente na estrutura de dados
                 novo_valor = st.number_input("Valor (€)", value=float(item["valor"]), 
                                            min_value=0.0, step=5.0, 
                                            key=f"valor_{categoria_key}_{i}")
@@ -146,9 +140,8 @@ elif pagina == "✏️ Editar Despesas":
         if submitted:
             salvar_dados(dados)
             st.success("Despesas atualizadas com sucesso!")
-            st.rerun() # Reinicia a aplicação para refletir as mudanças
-
-    # Seção para adicionar uma nova despesa
+    
+    # Adicionar nova despesa
     st.divider()
     st.subheader("Adicionar Nova Despesa")
     
@@ -168,14 +161,15 @@ elif pagina == "✏️ Editar Despesas":
             })
             salvar_dados(dados)
             st.success("Despesa adicionada com sucesso!")
-            st.rerun() # Reinicia a aplicação para refletir as novas despesas
+            st.rerun()
 
+# Página: Resumo Financeiro
 elif pagina == "📊 Resumo Financeiro":
     st.header("📊 Resumo Financeiro")
     
     totais = calcular_totais(dados)
     
-    # Mostra as métricas principais
+    # Métricas principais
     col1, col2, col3, col4 = st.columns(4)
     with col1:
         st.metric("Total Mensal", f"{totais['mensal']:.2f} €")
@@ -188,10 +182,10 @@ elif pagina == "📊 Resumo Financeiro":
     
     st.divider()
     
-    # Gráficos de distribuição de despesas
+    # Gráfico de distribuição de despesas
     st.subheader("Distribuição de Despesas")
     
-    # Prepara os dados para o DataFrame
+    # Preparar dados para o gráfico
     chart_data = []
     for categoria, items in dados.items():
         for item in items:
@@ -199,7 +193,8 @@ elif pagina == "📊 Resumo Financeiro":
                 chart_data.append({
                     "Categoria": categoria.capitalize(),
                     "Despesa": item["nome"],
-                    "Valor": item["valor"]
+                    "Valor": item["valor"],
+                    "Ícone": item["icon"]
                 })
     
     if chart_data:
@@ -217,9 +212,12 @@ elif pagina == "📊 Resumo Financeiro":
                      labels={'Valor': 'Valor (€)', 'Despesa': 'Despesa'})
         st.plotly_chart(fig2, use_container_width=True)
     else:
-        st.info("Adicione valores às suas despesas para ver os gráficos.")
+        st.info("Adicione valores às suas despesas para ver gráficos.")
 
-# --- Rodapé da Barra Lateral ---
+# Informações na barra lateral
 st.sidebar.divider()
 st.sidebar.info("💡 Dica: Atualize os valores regularmente para manter seu orçamento sob controle!")
+
+# Rodapé
+st.sidebar.divider()
 st.sidebar.caption(f"Última atualização: {datetime.now().strftime('%d/%m/%Y %H:%M')}")
