@@ -154,14 +154,18 @@ elif pagina == "✏️ Editar Despesas":
         submitted_add = st.form_submit_button("➕ Adicionar Despesa")
         
         if submitted_add and novo_nome:
-            dados[categoria_key].append({
-                "nome": novo_nome,
-                "valor": novo_valor,
-                "icon": novo_icon
-            })
-            salvar_dados(dados)
-            st.success("Despesa adicionada com sucesso!")
-            st.rerun()
+            nomes_existentes = [item["nome"].lower() for item in dados[categoria_key]]
+            if novo_nome.lower() in nomes_existentes:
+                st.warning("⚠️ Já existe uma despesa com esse nome!")
+            else:
+                dados[categoria_key].append({
+                    "nome": novo_nome,
+                    "valor": novo_valor,
+                    "icon": novo_icon
+                })
+                salvar_dados(dados)
+                st.success("Despesa adicionada com sucesso!")
+                st.rerun()
 
 # Página: Resumo Financeiro
 elif pagina == "📊 Resumo Financeiro":
@@ -185,7 +189,6 @@ elif pagina == "📊 Resumo Financeiro":
     # Gráfico de distribuição de despesas
     st.subheader("Distribuição de Despesas")
     
-    # Preparar dados para o gráfico
     chart_data = []
     for categoria, items in dados.items():
         for item in items:
@@ -200,19 +203,41 @@ elif pagina == "📊 Resumo Financeiro":
     if chart_data:
         df = pd.DataFrame(chart_data)
         
-        # Gráfico de pizza
         fig = px.pie(df, values='Valor', names='Despesa', 
                      title='Distribuição de Despesas por Categoria',
                      hover_data=['Categoria'])
         st.plotly_chart(fig, use_container_width=True)
         
-        # Gráfico de barras
         fig2 = px.bar(df, x='Despesa', y='Valor', color='Categoria',
                      title='Valor das Despesas por Categoria',
                      labels={'Valor': 'Valor (€)', 'Despesa': 'Despesa'})
         st.plotly_chart(fig2, use_container_width=True)
     else:
         st.info("Adicione valores às suas despesas para ver gráficos.")
+
+# ----------------------
+# Exportar / Importar JSON (sem libs extras)
+# ----------------------
+st.sidebar.divider()
+st.sidebar.subheader("📂 Exportar / Importar")
+
+# Exportar JSON
+st.sidebar.download_button(
+    "⬇️ Exportar JSON",
+    data=json.dumps(dados, ensure_ascii=False, indent=4),
+    file_name="despesas_exportadas.json",
+    mime="application/json"
+)
+
+# Importar JSON
+arquivo_importado = st.sidebar.file_uploader("📤 Importar JSON", type="json")
+if arquivo_importado is not None:
+    try:
+        dados_importados = json.load(arquivo_importado)
+        salvar_dados(dados_importados)
+        st.sidebar.success("✅ Dados importados com sucesso! Recarregue a página.")
+    except Exception as e:
+        st.sidebar.error(f"Erro ao importar: {e}")
 
 # Informações na barra lateral
 st.sidebar.divider()
