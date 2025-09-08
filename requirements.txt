@@ -1,0 +1,5 @@
+pip install -r requirements.txt
+4.  Depois, execute o aplicativo:
+```bash
+streamlit run despesas_manager.py
+
